@@ -39,8 +39,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return Scaffold(
         body: Row(
           children: [
-            Expanded(child: _buildBranding(context)),
-            Expanded(child: _buildForm(context)),
+            Expanded(
+              child: Container(
+                height: double.infinity,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF173F45), Color(0xFF2A5C63)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Center(child: SingleChildScrollView(child: _buildBranding(context))),
+              ),
+            ),
+            Expanded(
+              child: Container(
+                color: Colors.white,
+                child: Center(child: SingleChildScrollView(child: _buildForm(context))),
+              ),
+            ),
           ],
         ),
       );
@@ -105,45 +122,34 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Widget _buildBranding(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF173F45), Color(0xFF2A5C63)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(40),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Image.asset(
-                'assets/images/APGOV.png',
-                height: 120,
-              ),
-              const SizedBox(height: 32),
-              const Text(
-                'ANDHRA PRADESH\nVISION OUTREACH\nPROGRAM',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Container(height: 3, width: 60, decoration: BoxDecoration(color: const Color(0xFFFFB300), borderRadius: BorderRadius.circular(2))),
-              const SizedBox(height: 16),
-              const Text(
-                'Comprehensive Eye Care for All',
-                style: TextStyle(color: Colors.white70, fontSize: 15),
-              ),
-            ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 40),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Image.asset(
+            'assets/images/APGOV.png',
+            height: 120,
           ),
-        ),
+          const SizedBox(height: 32),
+          const Text(
+            'ANDHRA PRADESH\nVISION OUTREACH\nPROGRAM',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(height: 3, width: 60, decoration: BoxDecoration(color: const Color(0xFFFFB300), borderRadius: BorderRadius.circular(2))),
+          const SizedBox(height: 16),
+          const Text(
+            'Comprehensive Eye Care for All',
+            style: TextStyle(color: Colors.white70, fontSize: 15),
+          ),
+        ],
       ),
     );
   }
