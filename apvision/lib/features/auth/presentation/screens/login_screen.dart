@@ -78,13 +78,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.remove_red_eye, color: Colors.white, size: 32),
+          Image.asset(
+            'assets/images/APGOV.png',
+            height: 60,
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -123,13 +119,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.remove_red_eye, size: 72, color: Colors.white),
+              Image.asset(
+                'assets/images/APGOV.png',
+                height: 120,
               ),
               const SizedBox(height: 32),
               const Text(
