@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/utils/responsive.dart';
+import '../../shared/providers/screening_state_provider.dart';
+import '../../shared/providers/emr_state_provider.dart';
 
-class ScaffoldWithNavBar extends StatelessWidget {
+class ScaffoldWithNavBar extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
 
   const ScaffoldWithNavBar({
@@ -10,15 +13,22 @@ class ScaffoldWithNavBar extends StatelessWidget {
     required this.navigationShell,
   });
 
-  void _onItemTapped(int index, BuildContext context) {
+  void _onItemTapped(int index, WidgetRef ref) {
+    // Reset internal states of tabs to their root views when switching
+    if (index == 2) {
+      ref.read(screeningStateProvider.notifier).reset();
+    } else if (index == 3) {
+      ref.read(emrStateProvider.notifier).reset();
+    }
+    
     navigationShell.goBranch(
       index,
-      initialLocation: index == navigationShell.currentIndex,
+      initialLocation: true,
     );
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isMobile = Responsive.isMobile(context);
 
     // If it's desktop/tablet, we don't show the bottom nav bar.
@@ -32,7 +42,7 @@ class ScaffoldWithNavBar extends StatelessWidget {
               backgroundColor: Colors.white,
               indicatorColor: const Color(0xFF173F45).withValues(alpha: 0.12),
               labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-              onDestinationSelected: (index) => _onItemTapped(index, context),
+              onDestinationSelected: (index) => _onItemTapped(index, ref),
               destinations: const [
                 NavigationDestination(
                   icon: Icon(Icons.dashboard_outlined),

@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:apvision/shared/utils/responsive.dart';
+import 'package:apvision/shared/providers/patient_provider.dart';
+import 'package:apvision/shared/providers/screening_state_provider.dart';
+import 'package:apvision/core/models/patient_model.dart';
 
 class ScreeningScreen extends ConsumerStatefulWidget {
   const ScreeningScreen({super.key});
@@ -9,8 +13,9 @@ class ScreeningScreen extends ConsumerStatefulWidget {
 }
 
 class _ScreeningScreenState extends ConsumerState<ScreeningScreen> {
-  int _currentStep = 0;
-  String? _selectedPatient;
+  // State is now managed by screeningStateProvider
+  // int _currentStep = 0;
+  // String? _selectedPatient;
 
   // Colors based on the design
   static const Color _bgColor = Color(0xFFFBF6EE);
@@ -55,22 +60,23 @@ class _ScreeningScreenState extends ConsumerState<ScreeningScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_selectedPatient == null) {
+    final screeningState = ref.watch(screeningStateProvider);
+    final selectedPatient = screeningState.selectedPatient;
+    final currentStep = screeningState.currentStep;
+
+    if (selectedPatient == null) {
       return _buildPatientQueue();
     }
 
     return Scaffold(
       backgroundColor: _bgColor,
       appBar: AppBar(
-        title: Text('Screening: $_selectedPatient', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        title: Text('Screening: $selectedPatient', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         backgroundColor: _completedColor,
         foregroundColor: Colors.white,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => setState(() {
-            _selectedPatient = null;
-            _currentStep = 0;
-          }),
+          onPressed: () => ref.read(screeningStateProvider.notifier).reset(),
         ),
         elevation: 0,
       ),
@@ -79,7 +85,7 @@ class _ScreeningScreenState extends ConsumerState<ScreeningScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Column(
             children: [
-              _buildCustomStepper(),
+              _buildCustomStepper(currentStep),
               const SizedBox(height: 8),
               Expanded(
                 child: Card(
@@ -88,12 +94,12 @@ class _ScreeningScreenState extends ConsumerState<ScreeningScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
                   child: Padding(
                     padding: EdgeInsets.all(isMobile ? 12.0 : 24.0),
-                    child: _buildCurrentStepContent(),
+                    child: _buildCurrentStepContent(currentStep),
                   ),
                 ),
               ),
               const SizedBox(height: 8),
-              _buildBottomControls(),
+              _buildBottomControls(currentStep, selectedPatient),
             ],
           ),
         ),
@@ -111,11 +117,8 @@ class _ScreeningScreenState extends ConsumerState<ScreeningScreen> {
         elevation: 0,
         actions: [
           TextButton.icon(
-            onPressed: () => setState(() {
-              _selectedPatient = "New Patient";
-              _currentStep = 0;
-            }),
-            icon: const Icon(Icons.add, color: Colors.white),
+            onPressed: () => ref.read(screeningStateProvider.notifier).selectPatient('New Patient'),
+            icon: const Icon(Icons.add, color: Colors.white, size: 16),
             label: const Text('NEW PATIENT', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
           const SizedBox(width: 8),
@@ -160,10 +163,7 @@ class _ScreeningScreenState extends ConsumerState<ScreeningScreen> {
                     title: Text(p['name']!, style: const TextStyle(fontWeight: FontWeight.bold, color: _textColor)),
                     subtitle: Text('${p['id']} • ${p['age']} yrs, ${p['gender']} • ${p['village']}', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                     trailing: ElevatedButton(
-                      onPressed: () => setState(() {
-                        _selectedPatient = p['name'];
-                        _currentStep = 0;
-                      }),
+                      onPressed: () => ref.read(screeningStateProvider.notifier).selectPatient(p['name']),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _completedColor,
                         foregroundColor: Colors.white,
@@ -182,7 +182,7 @@ class _ScreeningScreenState extends ConsumerState<ScreeningScreen> {
     );
   }
 
-  Widget _buildCustomStepper() {
+  Widget _buildCustomStepper(int currentStep) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -190,8 +190,8 @@ class _ScreeningScreenState extends ConsumerState<ScreeningScreen> {
         children: List.generate(_steps.length * 2 - 1, (index) {
           if (index.isOdd) {
             final stepIndex = index ~/ 2;
-            final isCompleted = _currentStep > stepIndex;
-            final isCurrentPath = _currentStep == stepIndex + 1;
+            final isCompleted = currentStep > stepIndex;
+            final isCurrentPath = currentStep == stepIndex + 1;
             
             return Container(
               width: 40, height: 2,
@@ -200,8 +200,8 @@ class _ScreeningScreenState extends ConsumerState<ScreeningScreen> {
           }
 
           final stepIndex = index ~/ 2;
-          final isCompleted = _currentStep > stepIndex;
-          final isActive = _currentStep == stepIndex;
+          final isCompleted = currentStep > stepIndex;
+          final isActive = currentStep == stepIndex;
 
           return Column(
             children: [
@@ -226,19 +226,16 @@ class _ScreeningScreenState extends ConsumerState<ScreeningScreen> {
     );
   }
 
-  Widget _buildBottomControls() {
+  Widget _buildBottomControls(int currentStep, String? selectedPatient) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         ElevatedButton.icon(
           onPressed: () {
-            if (_currentStep > 0) {
-              setState(() => _currentStep--);
+            if (currentStep > 0) {
+              ref.read(screeningStateProvider.notifier).setStep(currentStep - 1);
             } else {
-              setState(() {
-                _selectedPatient = null;
-                _currentStep = 0;
-              });
+              ref.read(screeningStateProvider.notifier).reset();
             }
           },
           icon: const Icon(Icons.arrow_back, size: 18),
@@ -257,32 +254,66 @@ class _ScreeningScreenState extends ConsumerState<ScreeningScreen> {
             return Container(
               margin: const EdgeInsets.symmetric(horizontal: 4),
               width: 8, height: 8,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: _currentStep == index ? _activeColor : _inactiveColor),
+              decoration: BoxDecoration(shape: BoxShape.circle, color: currentStep == index ? _activeColor : _inactiveColor),
             );
           }),
         ),
 
-        _currentStep < _steps.length - 1
+        currentStep < _steps.length - 1
             ? ElevatedButton(
-                onPressed: () => setState(() => _currentStep++),
+                onPressed: () => ref.read(screeningStateProvider.notifier).setStep(currentStep + 1),
                 style: ElevatedButton.styleFrom(backgroundColor: _activeColor, foregroundColor: Colors.white, elevation: 0, padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 32, vertical: 10)), // Reduced from 16
                 child: Row(children: [if (!isMobile) const Text('Next', style: TextStyle(fontWeight: FontWeight.bold)), if (!isMobile) const SizedBox(width: 8), const Icon(Icons.arrow_forward, size: 18)]),
               )
             : ElevatedButton.icon(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Screening Saved to EMR')));
-                  setState(() { _currentStep = 0; _selectedPatient = null; });
+                  // Save to provider
+                  final newVisit = ScreeningVisit(
+                    date: DateTime.now().toString().split(' ')[0],
+                    doctor: 'Dr. Suresh Babu',
+                    diagnosis: 'Screening Completed',
+                    iop: '14 / 14 mmHg',
+                    va: '6/6 (OU)',
+                    notes: 'Screening finished via outreach mobile app.',
+                    plan: 'Routine follow-up',
+                  );
+
+                  if (selectedPatient == "New Patient") {
+                    ref.read(patientProvider.notifier).addPatient(Patient(
+                      id: 'APV-${DateTime.now().millisecond}',
+                      name: 'New Patient Name', // This would come from form controllers
+                      age: 40,
+                      gender: 'Male',
+                      village: 'Default Village',
+                      phone: '0000000000',
+                      lastVisit: newVisit.date,
+                      diagnosis: newVisit.diagnosis,
+                      status: 'Screened',
+                      color: Colors.blue,
+                      visits: [newVisit],
+                    ));
+                  } else {
+                    ref.read(patientProvider.notifier).updatePatientScreening(selectedPatient!, newVisit);
+                  }
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Screening for $selectedPatient saved to EMR!'),
+                      backgroundColor: _completedColor,
+                    ),
+                  );
+                  ref.read(screeningStateProvider.notifier).reset();
                 },
                 icon: const Icon(Icons.save),
                 label: isMobile ? const SizedBox() : const Text('Save to EMR', style: TextStyle(fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(backgroundColor: _completedColor, foregroundColor: Colors.white, elevation: 0, padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24, vertical: 10)), // Reduced from 16
+                style: ElevatedButton.styleFrom(backgroundColor: _completedColor, foregroundColor: Colors.white, elevation: 0, padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24, vertical: 10)),
               ),
       ],
     );
   }
 
-  Widget _buildCurrentStepContent() {
-    switch (_currentStep) {
+  Widget _buildCurrentStepContent(int currentStep) {
+    switch (currentStep) {
       case 0: return _buildStep1();
       case 1: return _buildStep2();
       case 2: return _buildStep3();

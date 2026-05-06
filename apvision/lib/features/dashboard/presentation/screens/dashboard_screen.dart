@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../shared/utils/responsive.dart';
+import 'package:apvision/shared/utils/responsive.dart';
+import 'package:apvision/shared/providers/patient_provider.dart';
 import '../widgets/kpi_card.dart';
 import '../widgets/charts_widget.dart';
 
@@ -15,16 +16,17 @@ class DashboardScreen extends ConsumerStatefulWidget {
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   int _selectedIndex = 0;
 
-  final _kpis = const [
-    _KPIData('Total Screenings', '12,450', Icons.people, Colors.blue),
-    _KPIData('Spectacles Delivered', '4,200', Icons.remove_red_eye, Color(0xFF00897B)),
-    _KPIData('Referrals', '850', Icons.local_hospital, Colors.orange),
-    _KPIData('District Coverage', '100%', Icons.map, Colors.purple),
-  ];
-
   @override
   Widget build(BuildContext context) {
     final isMobile = Responsive.isMobile(context);
+    final patients = ref.watch(patientProvider);
+    
+    final kpis = [
+      _KPIData('Total Screenings', patients.length.toString(), Icons.people, Colors.blue),
+      _KPIData('Spectacles Delivered', patients.where((p) => p.status.contains('Spectacles')).length.toString(), Icons.remove_red_eye, const Color(0xFF00897B)),
+      _KPIData('Referrals', patients.where((p) => p.status.contains('Referred')).length.toString(), Icons.local_hospital, Colors.orange),
+      _KPIData('District Coverage', '100%', Icons.map, Colors.purple),
+    ];
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
@@ -66,7 +68,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         children: [
           if (Responsive.isDesktop(context))
             SizedBox(width: 250, child: _buildDrawer(context)),
-          Expanded(child: _buildBody(context)),
+          Expanded(child: _buildBody(context, kpis)),
         ],
       ),
     );
@@ -133,7 +135,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildBody(BuildContext context) {
+  Widget _buildBody(BuildContext context, List<_KPIData> kpis) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -154,7 +156,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
 
           // KPI Cards
-          _buildKPISection(context),
+          _buildKPISection(context, kpis),
           const SizedBox(height: 28),
 
           // Charts
@@ -170,14 +172,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildKPISection(BuildContext context) {
+  Widget _buildKPISection(BuildContext context, List<_KPIData> kpis) {
     final isTablet = Responsive.isTablet(context);
     final isDesktop = Responsive.isDesktop(context);
 
     // Mobile: vertical list of cards
     if (!isTablet && !isDesktop) {
       return Column(
-        children: _kpis.map((k) => Padding(
+        children: kpis.map((k) => Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: KPICard(title: k.title, value: k.value, icon: k.icon, color: k.color),
         )).toList(),
@@ -195,9 +197,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         mainAxisSpacing: 14,
         childAspectRatio: isDesktop ? 2.2 : 2.5,
       ),
-      itemCount: _kpis.length,
+      itemCount: kpis.length,
       itemBuilder: (context, i) {
-        final k = _kpis[i];
+        final k = kpis[i];
         return KPICard(title: k.title, value: k.value, icon: k.icon, color: k.color);
       },
     );
